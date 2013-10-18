@@ -1,5 +1,7 @@
 # Django settings for APIXServer project.
 
+PROJECT_ROOT = "/Users/molnarzs/Dropbox/Projects/2013/APIXMobil/APIXServer"
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
@@ -11,13 +13,14 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': '',                      # Or path to database file if using sqlite3.
-        # The following settings are not used with sqlite3:
-        'USER': '',
-        'PASSWORD': '',
-        'HOST': '',                      # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
-        'PORT': '',                      # Set to empty string for default.
+        'ENGINE': 'firebird',
+        'NAME': '/Library/Frameworks/Firebird.framework/Resources/examples/empbuild/GMFS_DATABASE.FDB',  # Path to database or db alias
+        #'NAME': PROJECT_ROOT + '/database/a.FDB',  # Path to database or db alias
+        'USER': 'SYSDBA',           # Your db user
+        'PASSWORD': 'Canon1973',    # db user password
+        'HOST': '127.0.0.1',        # Your host machine
+        'PORT': '3050',             # If is empty, use default 3050
+        'OPTIONS' : {'charset':'WIN1250'}
     }
 }
 
@@ -120,6 +123,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'south'
     # Uncomment the next line to enable the admin:
     # 'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
