@@ -5,8 +5,7 @@ from django.conf.urls import patterns, include, url
 # admin.autodiscover()
 
 urlpatterns = patterns('',
-    # Examples:
-    # url(r'^$', 'APIXServer.views.home', name='home'),
+    url(r'^$', 'server.views.index', name='index'),
     # url(r'^APIXServer/', include('APIXServer.foo.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:
