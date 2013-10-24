@@ -161,3 +161,7 @@ LOGGING = {
         },
     }
 }
+
+AUTHENTICATION_BACKENDS = ('server.auth_backend.AuthBackend',)
+#LOGIN_REDIRECT_URL = '/logged-in/'
+#LOGIN_URL = '/login/'
