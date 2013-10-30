@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8
 from django.http import HttpResponse
-from models import Csoportok, Kartyak
+from models import Csoportok, Kartyak, Treenode
 from models import User as AvisUser
 import json
 from django.views.generic import View
@@ -119,10 +119,13 @@ class GetCollection(CommonView):
         logger.info("Get request arrived")
         self.authenticate(username, password)
         if id == "card_details_table":
-            data = Kartyak.Query_1(1, username)
+            data = Kartyak.Details(1, username)
+        elif id == "root_table":
+            data = Treenode.GetNodes(0, username)
         else:
             data = testData[id]
         json_response = json.dumps(data)
+        print json_response
         return HttpResponse(json_response, mimetype='application/json')
 
 

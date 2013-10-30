@@ -1,6 +1,7 @@
 # Django settings for APIXServer project.
+from settings_actual import Settings
 
-PROJECT_ROOT = "/Users/molnarzs/Dropbox/Projects/2013/APIXMobil/APIXServer"
+PROJECT_ROOT = Settings["root"]
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -14,7 +15,7 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'firebird',
-        'NAME': '/Library/Frameworks/Firebird.framework/Resources/examples/empbuild/GMFS_DATABASE.FDB',  # Path to database or db alias
+        'NAME': Settings["databases_name"],  # Path to database or db alias
         #'NAME': PROJECT_ROOT + '/database/a.FDB',  # Path to database or db alias
         'USER': 'SYSDBA',           # Your db user
         'PASSWORD': 'Canon1973',    # db user password

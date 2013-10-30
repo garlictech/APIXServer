@@ -1,0 +1,8 @@
+<VirtualHost *:80>
+        ServerName data.avisignis.com
+        WSGIScriptAlias / /home/apixserver/public_html/APIXServer/project.wsgi
+        Alias /static/ /home/apixserver/public_html/APIXServer
+        <Location "/static/">
+            Options -Indexes
+        </Location>
+</VirtualHost>

@@ -8,7 +8,7 @@ from server.views import GetCollection, Login
 
 urlpatterns = patterns('server.views',
     url(r'^get_collection/(?P<username>\w+)/(?P<password>\w*)/(?P<id>\w+)/$', GetCollection.as_view(), name='get_collection'),
-    url(r'^login/(?P<username>\w+)/(?P<password>\w*)/$', Login.as_view(), name='login'),
+    url(r'^login/(?P<username>\w+)/(?P<password>\w*)/$', Login.as_view(), name='login')
     # url(r'^APIXServer/', include('APIXServer.foo.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:

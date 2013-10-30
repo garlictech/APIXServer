@@ -9,11 +9,12 @@
 from __future__ import unicode_literals
 #import base64
 
-from django.db import models, connection
+from django.db import models
+
 
 class AuthGroup(models.Model):
-    id = models.IntegerField(primary_key=True, db_column='ID') # Field name made lowercase.
-    name = models.CharField(max_length=80, unique=True, db_column='NAME') # Field name made lowercase.
+    id = models.IntegerField(primary_key=True, db_column='ID')  # Field name made lowercase.
+    name = models.CharField(max_length=80, unique=True, db_column='NAME')  # Field name made lowercase.
     class Meta:
         db_table = 'auth_group'
 
@@ -151,7 +152,7 @@ class Kartyak(models.Model):
     actual = models.CharField(max_length=1, blank=True)
 
     @staticmethod
-    def Query_1(node, user):
+    def Details(node, user):
         str = '''select v.*
             from "Kartyak" v, A_CARD p
             where
@@ -291,7 +292,7 @@ class Tlevel(models.Model):
 class Treenode(models.Model):
     absindx = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
     user = models.CharField(max_length=70, blank=True)
-    dbindx = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    dbindx = models.DecimalField(primary_key=True, max_digits=10, decimal_places=0, blank=True)
     parent0 = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
     parent1 = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
     parent2 = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
@@ -313,7 +314,26 @@ class Treenode(models.Model):
     make = models.CharField(max_length=20, blank=True)
     read_only = models.CharField(max_length=1, blank=True)
     class Meta:
-        db_table = 'treenode'
+        db_table = 'TreeNode'
+
+    @staticmethod
+    def GetNodes(level, username):
+        res = {
+            "desc": {
+                "title_id": "data",
+                "viewControllerName": "simple_table_view",
+                "text_id": True
+            }
+        }
+
+        data = []
+
+        for node in Treenode.objects.filter(user=username, parent0=-1):
+            data.append([node.nev, "", ""])
+
+        res["data"] = [data];
+        return res
+
 
 class User(models.Model):
     num = models.DecimalField(primary_key=True, max_digits=10, decimal_places=0, blank=True)

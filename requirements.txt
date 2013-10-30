@@ -1,0 +1,4 @@
+Django==1.5.4
+south
+fdb
+django-firebird==1.5.1.final.0
