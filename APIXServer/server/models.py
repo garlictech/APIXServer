@@ -7,9 +7,10 @@
 # Also note: You'll have to insert the output of 'django-admin.py sqlcustom [appname]'
 # into your database.
 from __future__ import unicode_literals
-#import base64
+import base64
 
 from django.db import models
+from django.conf import settings
 
 
 class AuthGroup(models.Model):
@@ -329,9 +330,15 @@ class Treenode(models.Model):
         data = []
 
         for node in Treenode.objects.filter(user=username, parent0=-1):
-            data.append([node.nev, "", ""])
+            if node.icon >= 0:
+                filename = "%s/%s/%03d.ico" % (settings.PROJECT_ROOT, "APIXServer/icons", node.icon)
+                print filename
+                with open(filename, "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read())
 
-        res["data"] = [data];
+            data.append([node.nev, encoded_string, ""])
+
+        res["data"] = [data]
         return res
 
 
