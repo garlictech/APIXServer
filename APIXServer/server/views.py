@@ -140,7 +140,7 @@ class GetCards(CommonView):
 class GetRefuelingDetails(CommonView):
     def get(self, request, username, password, fromDate, toDate, node, isMetric):
         self.tableStart("GetRefuelingDetails", username, password)
-        data = Tankolasok.Details(node, username, fromDate, toDate)
+        data = Tankolasok.Details(node, username, fromDate, toDate, isMetric)
         return self.tableEnd(request, data)
 
 

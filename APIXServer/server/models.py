@@ -247,8 +247,12 @@ class Tankolasok(models.Model):
         db_table = 'Tankolasok'
 
     @staticmethod
-    def Details(node, username, fromDate, toDate):
-        query = '''SELECT v.* from "Tankolasok" v, (SELECT a."abs_id", a."vezerlo", a."gep_csop",a."kut" FROM "Tankolasok" a, (SELECT p.MYVEZ, p.MYKUT, MYCSOP FROM H_TANK(%s, \'%s\', -1) p) al WHERE ((a."vezerlo"=al."MYVEZ")AND(a."kut"=al."MYKUT"))or(a."gep_csop"=al.MYCSOP) GROUP by a."abs_id", a."vezerlo", a."kut", a."gep_csop") al2 WHERE v."abs_id"=al2."abs_id" and (v."dt_num">=%f) and (v."dt_num"<=%f)order by v."dt_num";''' % (int(node) , username,
+    def Details(node, username, fromDate, toDate, isMetric):
+        temperature_expr = 'v."hofok"' if isMetric == "1" else '(((v."hofok")*9)/5)+32 as "hofok"'
+
+        t_temperature_expr = 'v."hofok"' if isMetric  == "1" else '(((v."t_hofok")*9)/5)+32 as "t_hofok"'
+
+        query = '''SELECT v."abs_id", v."vezerlo", v."sorszam", v."helyszin", v."datumido", v."dt_num", v."sofor_id", v."sofor_card", v."sofor_nev", v."sofor_csop", v."gep_id", v."gep_card", v."gep_nev", v."gep_csop", v."status_c", v."kut", v."km", v."u_ora", v."m_lev", v."e_km", v."e_uo", v."km_n", v."uo_n", v."km_m", v."uo_m", v."km_n_d", v."uo_n_d", v."mil_a",  v."s_n_d", v."km_a", v."uo_a", %s, v."ua_mm", v."v_mm", %s, v."e_ar", v."ua_tipn", v."tipus", v."liter", v."liter15", v."status_n", v.RDB$DB_KEY from "Tankolasok" v, (SELECT a."abs_id", a."vezerlo", a."gep_csop",a."kut" FROM "Tankolasok" a, (SELECT p.MYVEZ, p.MYKUT, MYCSOP FROM H_TANK(%s, \'%s\', -1) p) al WHERE ((a."vezerlo"=al."MYVEZ")AND(a."kut"=al."MYKUT"))or(a."gep_csop"=al.MYCSOP) GROUP by a."abs_id", a."vezerlo", a."kut", a."gep_csop") al2 WHERE v."abs_id"=al2."abs_id" and (v."dt_num">=%f) and (v."dt_num"<=%f)order by v."dt_num";''' % (temperature_expr, t_temperature_expr, int(node) , username,
             float(fromDate), float(toDate))
 
         data = []
@@ -288,6 +292,7 @@ class Tankolasok(models.Model):
                 ["ua_mm", "", p.ua_mm],
                 ["v_mm", "", p.v_mm],
                 ["t_hofok", "", p.t_hofok],
+                ["hofok", "", p.hofok],
                 ["e_ar", "", p.e_ar],
                 ["ua_tipn", "", p.ua_tipn],
                 ["tipus", "", p.tipus],
