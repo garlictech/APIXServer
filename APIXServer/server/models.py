@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: utf-8
 # This is an auto-generated Django model module.
 # You'll have to do the following manually to clean this up:
 #     * Rearrange models' order
@@ -8,6 +10,7 @@
 # into your database.
 from __future__ import unicode_literals
 import base64
+import os
 
 from django.db import models
 from django.conf import settings
@@ -163,9 +166,10 @@ class Kartyak(models.Model):
                           (v."csoport"=p1.MYCSOP)
                 ))
             and(v."azonosito"=p.MYCARD)
-            and(v."id"=p.MYID) order by v."nev";''' % (node, user)
+            and(v."id"=p.MYID) order by v."nev";''' % (int(node) , user)
 
-        res = []
+
+        data = []
 
         for p in Kartyak.objects.raw(str):
             subset = [
@@ -173,9 +177,16 @@ class Kartyak(models.Model):
                 ["serial_no", "", p.sorszam]
             ]
 
-            res.append(subset)
+            data.append(subset)
 
-        return res
+        return {
+            "desc": {
+                "title_id": "card_details",
+                "text_id": True
+            },
+
+            "data": data
+        }
 
 
     class Meta:
@@ -189,8 +200,9 @@ class SouthMigrationhistory(models.Model):
     class Meta:
         db_table = 'south_migrationhistory'
 
+
 class Tankolasok(models.Model):
-    abs_id = models.DecimalField(unique=True, null=True, max_digits=10, decimal_places=0, blank=True)
+    abs_id = models.DecimalField(primary_key=True, max_digits=10, decimal_places=0, blank=True)
     vezerlo = models.CharField(max_length=70, blank=True)
     sorszam = models.IntegerField(null=True, blank=True)
     helyszin = models.CharField(max_length=50, blank=True)
@@ -220,19 +232,85 @@ class Tankolasok(models.Model):
     s_n_d = models.DecimalField(null=True, max_digits=10, decimal_places=4, blank=True)
     km_a = models.DecimalField(null=True, max_digits=10, decimal_places=4, blank=True)
     uo_a = models.DecimalField(null=True, max_digits=10, decimal_places=4, blank=True)
-    hofok = models.DecimalField(null=True, max_digits=3, decimal_places=2, blank=True)
+    hofok = models.DecimalField(null=True, max_digits=4, decimal_places=2, blank=True)
     ua_mm = models.IntegerField(null=True, blank=True)
     v_mm = models.IntegerField(null=True, blank=True)
-    t_hofok = models.DecimalField(null=True, max_digits=3, decimal_places=2, blank=True)
+    t_hofok = models.DecimalField(null=True, max_digits=4, decimal_places=2, blank=True)
     e_ar = models.DecimalField(null=True, max_digits=7, decimal_places=2, blank=True)
     ua_tipn = models.IntegerField(null=True, blank=True)
     tipus = models.CharField(max_length=30, blank=True)
     liter = models.DecimalField(null=True, max_digits=8, decimal_places=3, blank=True)
     liter15 = models.DecimalField(null=True, max_digits=8, decimal_places=3, blank=True)
-    mil_a = models.DecimalField(null=True, max_digits=10, decimal_places=4, blank=True)
+    mil_a = models.DecimalField(null=True, max_digits=15, decimal_places=5, blank=True)
     status_n = models.IntegerField(null=True, blank=True)
     class Meta:
-        db_table = 'tankolasok'
+        db_table = 'Tankolasok'
+
+    @staticmethod
+    def Details(node, username, fromDate, toDate):
+        query = '''SELECT v.* from "Tankolasok" v, (SELECT a."abs_id", a."vezerlo", a."gep_csop",a."kut" FROM "Tankolasok" a, (SELECT p.MYVEZ, p.MYKUT, MYCSOP FROM H_TANK(%s, \'%s\', -1) p) al WHERE ((a."vezerlo"=al."MYVEZ")AND(a."kut"=al."MYKUT"))or(a."gep_csop"=al.MYCSOP) GROUP by a."abs_id", a."vezerlo", a."kut", a."gep_csop") al2 WHERE v."abs_id"=al2."abs_id" and (v."dt_num">=%f) and (v."dt_num"<=%f)order by v."dt_num";''' % (int(node) , username,
+            float(fromDate), float(toDate))
+
+        data = []
+
+        for p in Tankolasok.objects.raw(query):
+            subset = [
+                ["vezerlo", "", p.vezerlo],
+                ["sorszam", "", p.sorszam],
+                ["helyszin", "", p.helyszin],
+                ["datumido", "", p.datumido],
+                ["sofor_id", "", p.sofor_id],
+                ["sofor_card", "", p.sofor_card],
+                ["sofor_nev", "", p.sofor_nev],
+                ["sofor_csop", "", p.sofor_csop],
+                ["gep_id", "", p.gep_id],
+                ["gep_card", "", p.gep_card],
+                ["gep_nev", "", p.gep_nev],
+                ["gep_csop", "", p.gep_csop],
+                ["status_c", "", p.status_c],
+                ["kut", "", p.kut],
+                ["km", "", p.km],
+                ["u_ora", "", p.u_ora],
+                ["m_lev", "", p.m_lev],
+                ["e_km", "", p.e_km],
+                ["e_uo", "", p.e_uo],
+                ["km_n", "", p.km_n],
+                ["uo_n", "", p.uo_n],
+                ["km_m", "", p.km_m],
+                ["uo_m", "", p.uo_m],
+                ["km_n_d", "", p.km_n_d],
+                ["uo_n_d", "", p.uo_n_d],
+                ["mil_a", "", p.mil_a],
+                ["s_n_d", "", p.s_n_d],
+                ["km_a", "", p.km_a],
+                ["uo_a", "", p.uo_a],
+                ["hofok", "", p.hofok],
+                ["ua_mm", "", p.ua_mm],
+                ["v_mm", "", p.v_mm],
+                ["t_hofok", "", p.t_hofok],
+                ["e_ar", "", p.e_ar],
+                ["ua_tipn", "", p.ua_tipn],
+                ["tipus", "", p.tipus],
+                ["liter", "", p.liter],
+                ["liter15", "", p.liter15],
+                ["mil_a", "", p.mil_a],
+                ["status_n", "", p.status_n]
+            ]
+
+            for item in subset:
+                item[2] = unicode(item[2])
+
+            data.append(subset)
+
+        return {
+            "desc": {
+                "title_id": "refuelling_details",
+                "text_id": True
+            },
+
+            "data": data
+        }
+
 
 class Tartalyok(models.Model):
     num = models.IntegerField(unique=True, null=True, blank=True)
@@ -318,28 +396,78 @@ class Treenode(models.Model):
         db_table = 'TreeNode'
 
     @staticmethod
-    def GetNodes(level, username):
-        res = {
+    def Queries(node):
+        return {
             "desc": {
-                "title_id": "data",
-                "viewControllerName": "simple_table_view",
+                "title_id": "queries",
                 "text_id": True
-            }
+            },
+
+            "data": [[
+                ["refuelling_details", "", "", "refueling_details/%s" % node, "compound_table_view"],
+                ["refuelling_summary"],
+                ["card_details", "", "", "cards/%s" % node, "compound_table_view"],
+                ["card_summary"],
+                ["tank_details"],
+                ["tank_diagram"],
+                ["tank_summary"],
+                ["controller_details"],
+                ["controller_summary"],
+                ["fuelgas_data"]
+            ]]
         }
 
+    @staticmethod
+    def GetRoot(username):
+        desc = {
+            "title_id": "data",
+            "text_id": True
+        }
+
+        data = Treenode.GetData(username, -1)
+
+        return {
+            "desc": desc,
+            "data": data
+        }
+
+    @staticmethod
+    def GetNodes(username, dbindx):
+        data = Treenode.GetData(username, dbindx)
+
+        if len(data[0]) == 0:
+            return Treenode.Queries(dbindx)
+        else:
+            return {
+                "desc": {
+                    "title_id": "data",
+                    "text_id": True
+                },
+                "data": data
+            }
+
+    @staticmethod
+    def GetData(username, dbindx):
+        nodes = Treenode.objects.filter(user=username, parent0=dbindx)
         data = []
 
-        for node in Treenode.objects.filter(user=username, parent0=-1):
+        for node in nodes:
+            iconBlob = ""
+
             if node.icon >= 0:
-                filename = "%s/%s/%03d.ico" % (settings.PROJECT_ROOT, "APIXServer/icons", node.icon)
-                print filename
-                with open(filename, "rb") as image_file:
-                    encoded_string = base64.b64encode(image_file.read())
+                filename = os.path.join(settings.PROJECT_ROOT, "APIXServer", "icons",  "%03d.ico" % node.icon)
 
-            data.append([node.nev, encoded_string, ""])
+                try:
+                    with open(filename, "rb") as image_file:
+                        iconBlob = base64.b64encode(image_file.read())
+                except:
+                    filename = os.path.join(settings.PROJECT_ROOT, "APIXServer", "icons", "construction.png")
+                    with open(filename, "rb") as image_file:
+                        iconBlob = base64.b64encode(image_file.read())
 
-        res["data"] = [data]
-        return res
+            data.append([node.nev, iconBlob, "", "treenode/%d" % node.dbindx, "simple_table_view"])
+
+        return [data]
 
 
 class User(models.Model):

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8
 from django.http import HttpResponse
-from models import Csoportok, Kartyak, Treenode
+from models import Kartyak, Treenode, Tankolasok
 from models import User as AvisUser
 import json
 from django.views.generic import View
@@ -113,24 +113,46 @@ class CommonView(View):
         if not AvisUser.isAuthenticated(username, password):
             raise PermissionDenied
 
-
-class GetCollection(CommonView):
-    def get(self, request, username, password, id):
-        logger.info("Get request arrived")
+    def tableStart(self, label, username, password):
+        logger.info("%s request arrived" % label)
         self.authenticate(username, password)
-        if id == "card_details_table":
-            data = Kartyak.Details(1, username)
-        elif id == "root_table":
-            data = Treenode.GetNodes(0, username)
-        else:
-            data = testData[id]
+
+    def tableEnd(self, request, data):
         json_response = json.dumps(data)
-        print json_response
+        #print json_response
         return HttpResponse(json_response, mimetype='application/json')
+
+
+class GetTreeNode(CommonView):
+    def get(self, request, username, password, fromDate, toDate, dbindx, isMetric):
+        self.tableStart("GetTreeNode", username, password)
+        data = Treenode.GetNodes(username, dbindx)
+        return self.tableEnd(request, data)
+
+
+class GetCards(CommonView):
+    def get(self, request, username, password, fromDate, toDate, node):
+        self.tableStart("GetCards", username, password)
+        data = Kartyak.Details(node, username)
+        return self.tableEnd(request, data)
+
+
+class GetRefuelingDetails(CommonView):
+    def get(self, request, username, password, fromDate, toDate, node, isMetric):
+        self.tableStart("GetRefuelingDetails", username, password)
+        data = Tankolasok.Details(node, username, fromDate, toDate)
+        return self.tableEnd(request, data)
+
+
+class GetRootTable(CommonView):
+    def get(self, request, username, password, fromDate, toDate, isMetric):
+        self.tableStart("GetRootTable", username, password)
+        data = Treenode.GetRoot(username)
+        return self.tableEnd(request, data)
 
 
 class Login(CommonView):
     def get(self, request, username, password):
-        self.authenticate(username, password)
-        json_response = json.dumps({"authenticated": True})
-        return HttpResponse(json_response, mimetype='application/json')
+        self.tableStart("Login", username, password)
+        data = {"authenticated": True}
+        return self.tableEnd(request, data)
