@@ -376,7 +376,11 @@ class Tartalyok(models.Model):
         temperature_expr = GenerateTemperatureString("a", "hofok", isMetric)
         maxLiter_expr = '(a."max_liter" - a."keszlet") as max_liter' if isMetric else 'Trunc((a."max_liter" - a."keszlet")/3.75) as "max_liter"'
 
-        queryString = '''SELECT a."num", a."nev", a."helyszin", a."icon", a."ua_tip", a."es", a."es_vez", a."p1", a."p1_vez", a."p2", a."p2_vez", a."p3", a."p3_vez", a."p4", a."p4_vez", a."sajat", a."keszlet", a."keszlet15", a."kg", a."szazalek", a."csop", a."datumido", a."dt_num", a."suruseg", a."delete", a."zarolt_l", a."zarolt_mm", a."ua_tipn", a."a0", %s, %s, a.RDB$DB_KEY from "Tartalyok" a, (select "nev" from "TreeNode" where (%s ("dbindx"=%s)) and("delete"='') and ("azonosito"<>'')and("tipus"='2') and ("user"='%s') Group by "nev"  ) al where (a."nev"=al."nev")and(a."delete"='') order by a."nev";''' % (temperature_expr, maxLiter_expr, parentStr, node, user)
+        queryString_metric = '''SELECT a."num", a."nev", a."helyszin", a."icon", a."ua_tip", a."es", a."es_vez", a."p1", a."p1_vez", a."p2", a."p2_vez", a."p3", a."p3_vez", a."p4", a."p4_vez", a."sajat", a."keszlet", a."keszlet15", a."kg", a."szazalek", a."csop", a."datumido", a."dt_num", a."suruseg", a."delete", a."zarolt_l", a."zarolt_mm", a."ua_tipn", a."a0", %s, %s, a.RDB$DB_KEY from "Tartalyok" a, (select "nev" from "TreeNode" where (%s ("dbindx"=%s)) and("delete"='') and ("azonosito"<>'')and("tipus"='2') and ("user"='%s') Group by "nev"  ) al where (a."nev"=al."nev")and(a."delete"='') order by a."nev";''' % (temperature_expr, maxLiter_expr, parentStr, node, user)
+
+        queryString_us = '''SELECT a."num", a."nev", a."helyszin", a."icon", a."ua_tip", a."es", a."es_vez", a."p1", a."p1_vez", a."p2", a."p2_vez", a."p3", a."p3_vez", a."p4", a."p4_vez", a."sajat", Trunc((a."keszlet")/3.75) as "keszlet", Trunc((a."keszlet15")/3.75) as "keszlet15", Trunc((a."kg")/0.45359)as "kg", a."szazalek", a."csop", a."datumido", a."dt_num", a."suruseg", a."delete", Trunc((a."zarolt_l")/3.75) as "zarolt_l", a."zarolt_mm", a."ua_tipn", a."a0", %s, %s, a.RDB$DB_KEY from "Tartalyok" a, (select "nev" from "TreeNode" where (%s ("dbindx"=%s)) and("delete"='') and ("azonosito"<>'')and("tipus"='2') and ("user"='%s') Group by "nev"  ) al where (a."nev"=al."nev")and(a."delete"='') order by a."nev";''' % (temperature_expr, maxLiter_expr, parentStr, node, user)
+
+        queryString = (queryString_metric if isMetric == '1' else queryString_us)
 
         return ExecuteRawQuery(Tartalyok.objects, queryString, "tank_details");
 
