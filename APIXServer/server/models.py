@@ -14,6 +14,36 @@ import os
 
 from django.db import models
 from django.conf import settings
+import sys
+reload(sys)
+sys.setdefaultencoding("utf-8")
+
+def ExecuteRawQuery(objects, queryString, titleId, exclude=[]):
+        data = []
+        result = objects.raw(queryString)
+        columnNames = result.columns[:]
+
+        for i in exclude:
+            columnNames.remove(i)
+
+        for p in result:
+            subset = []
+
+            for column_name in columnNames:
+                s1 = unicode(column_name, errors='replace')
+                s2 = str(getattr(p, column_name)).decode('cp1252')
+                subset.append([s1, "", s2])
+
+            data.append(subset)
+
+        return {
+            "desc": {
+                "title_id": titleId,
+                "text_id": True
+            },
+
+            "data": data
+        }
 
 
 class AuthGroup(models.Model):
@@ -156,41 +186,23 @@ class Kartyak(models.Model):
     actual = models.CharField(max_length=1, blank=True)
 
     @staticmethod
-    def Details(node, user):
-        str = '''select v.*
+    def Details(node, user, fromDate, toDate):
+        queryString = '''select v.*
             from "Kartyak" v, A_CARD p
             where
                 (EXISTS(SELECT p1.MYCSOP, p1.MYCARD
-                    FROM CS_TANK(%d, \'%s\') p1
+                    FROM CS_TANK(%s, \'%s\') p1
                     where (v."azonosito"=p1.MYCARD) or
                           (v."csoport"=p1.MYCSOP)
                 ))
             and(v."azonosito"=p.MYCARD)
-            and(v."id"=p.MYID) order by v."nev";''' % (int(node) , user)
+            and(v."id"=p.MYID) order by v."nev";''' % (node , user)
 
-
-        data = []
-
-        for p in Kartyak.objects.raw(str):
-            subset = [
-                ["controller_name", "", p.vezerlo],
-                ["serial_no", "", p.sorszam]
-            ]
-
-            data.append(subset)
-
-        return {
-            "desc": {
-                "title_id": "card_details",
-                "text_id": True
-            },
-
-            "data": data
-        }
-
+        return ExecuteRawQuery(Kartyak.objects, queryString, "card_details");
 
     class Meta:
         db_table = 'Kartyak'
+
 
 class SouthMigrationhistory(models.Model):
     id = models.IntegerField(primary_key=True, db_column='ID') # Field name made lowercase.
@@ -250,14 +262,14 @@ class Tankolasok(models.Model):
     def Details(node, username, fromDate, toDate, isMetric):
         temperature_expr = 'v."hofok"' if isMetric == "1" else '(((v."hofok")*9)/5)+32 as "hofok"'
 
-        t_temperature_expr = 'v."hofok"' if isMetric  == "1" else '(((v."t_hofok")*9)/5)+32 as "t_hofok"'
+        t_temperature_expr = 'v."t_hofok"' if isMetric  == "1" else '(((v."t_hofok")*9)/5)+32 as "t_hofok"'
 
         query = '''SELECT v."abs_id", v."vezerlo", v."sorszam", v."helyszin", v."datumido", v."dt_num", v."sofor_id", v."sofor_card", v."sofor_nev", v."sofor_csop", v."gep_id", v."gep_card", v."gep_nev", v."gep_csop", v."status_c", v."kut", v."km", v."u_ora", v."m_lev", v."e_km", v."e_uo", v."km_n", v."uo_n", v."km_m", v."uo_m", v."km_n_d", v."uo_n_d", v."mil_a",  v."s_n_d", v."km_a", v."uo_a", %s, v."ua_mm", v."v_mm", %s, v."e_ar", v."ua_tipn", v."tipus", v."liter", v."liter15", v."status_n", v.RDB$DB_KEY from "Tankolasok" v, (SELECT a."abs_id", a."vezerlo", a."gep_csop",a."kut" FROM "Tankolasok" a, (SELECT p.MYVEZ, p.MYKUT, MYCSOP FROM H_TANK(%s, \'%s\', -1) p) al WHERE ((a."vezerlo"=al."MYVEZ")AND(a."kut"=al."MYKUT"))or(a."gep_csop"=al.MYCSOP) GROUP by a."abs_id", a."vezerlo", a."kut", a."gep_csop") al2 WHERE v."abs_id"=al2."abs_id" and (v."dt_num">=%f) and (v."dt_num"<=%f)order by v."dt_num";''' % (temperature_expr, t_temperature_expr, int(node) , username,
             float(fromDate), float(toDate))
 
         data = []
-
-        for p in Tankolasok.objects.raw(query):
+        result = Tankolasok.objects.raw(query)
+        for p in result:
             subset = [
                 ["vezerlo", "", p.vezerlo],
                 ["sorszam", "", p.sorszam],
@@ -318,7 +330,7 @@ class Tankolasok(models.Model):
 
 
 class Tartalyok(models.Model):
-    num = models.IntegerField(unique=True, null=True, blank=True)
+    num = models.IntegerField(primary_key=True)
     nev = models.CharField(max_length=70, blank=True)
     helyszin = models.CharField(max_length=50, blank=True)
     icon = models.IntegerField(null=True, blank=True)
@@ -349,6 +361,20 @@ class Tartalyok(models.Model):
     a0 = models.FloatField(null=True, blank=True)
     hofok = models.DecimalField(null=True, max_digits=5, decimal_places=1, blank=True)
     max_liter = models.IntegerField(null=True, blank=True)
+
+    @staticmethod
+    def Details(node, user, isMetric):
+        parentStr = ""
+
+        node = "-1"
+        for i in range(0, 9):
+            parentStr += '("parent%d"=%s) or ' % (i, node)
+
+
+        queryString = '''SELECT a."num", a."nev", a."helyszin", a."icon", a."ua_tip", a."es", a."es_vez", a."p1", a."p1_vez", a."p2", a."p2_vez", a."p3", a."p3_vez", a."p4", a."p4_vez", a."sajat", a."keszlet", a."keszlet15", a."kg", a."szazalek", a."csop", a."datumido", a."dt_num", a."suruseg", a."delete", a."zarolt_l", a."zarolt_mm", a."ua_tipn", a."a0", a."hofok", (a."max_liter" - a."keszlet") as max_liter,a.RDB$DB_KEY from "Tartalyok" a, (select "nev" from "TreeNode" where (%s ("dbindx"=%s)) and("delete"='') and ("azonosito"<>'')and("tipus"='2') and ("user"='%s') Group by "nev"  ) al where (a."nev"=al."nev")and(a."delete"='') order by a."nev";''' % (parentStr, node , user)
+
+        return ExecuteRawQuery(Tartalyok.objects, queryString, "tank_details");
+
     class Meta:
         db_table = 'tartalyok'
 
@@ -413,7 +439,7 @@ class Treenode(models.Model):
                 ["refuelling_summary"],
                 ["card_details", "", "", "cards/%s" % node, "compound_table_view"],
                 ["card_summary"],
-                ["tank_details"],
+                ["tank_details", "", "", "tank_details/%s" % node, "compound_table_view"],
                 ["tank_diagram"],
                 ["tank_summary"],
                 ["controller_details"],

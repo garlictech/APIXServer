@@ -1,112 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf-8
 from django.http import HttpResponse
-from models import Kartyak, Treenode, Tankolasok
+from models import Kartyak, Treenode, Tankolasok, Tartalyok
 from models import User as AvisUser
 import json
 from django.views.generic import View
 import logging
 from django.core.exceptions import PermissionDenied
+import sys
+reload(sys)
+sys.setdefaultencoding("utf-8")
 
 logger = logging.getLogger(__name__)
-
-testData = {}
-
-testData["sites_table"] = [[
-    ["Bp, Budaörsi út", "images/db_icons/1.png", "", "queries_collection"],
-    ["Bp, Kerepesi út", "images/db_icons/1.png"]
-]]
-
-testData["places_table"] = [[
-    ["Budapest", "images/db_icons/1.png", "", "sites_collection"],
-    ["Bánkút", "images/db_icons/2.png"]
-]]
-
-testData["refuelling_details_table"] = [[
-        ["detail", "", "value1"],
-        ["detail", "", "value1"],
-        ["diagram", "", "", "image_data"],
-        ["detail", "", "value1"],
-        ["detail", "", "value1"],
-        ["detail", "", "value1"],
-        ["detail", "", "value1"],
-        ["detail", "", "value1"],
-        ["detail", "", "value1"],
-        ["detail", "", "value1"],
-        ["detail", "", "value1"],
-        ["detail", "", "value1"],
-        ["detail", "", "value1"],
-        ["detail", "", "value1"],
-        ["detail", "", "value1"],
-        ["detail", "", "value1"],
-        ["detail", "", "value1"],
-        ["detail", "", "value1"],
-        ["detail", "", "value1"],
-        ["detail", "", "value1"],
-    ],
-
-    [
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-        ["diagram", "", "", "image_data"],
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-        ["detail", "", "value2"],
-    ],
-
-    [
-        ["detail", "", "value3"],
-        ["detail", "", "value3"],
-        ["diagram", "", "", "image_data"],
-        ["detail", "", "value3"],
-        ["detail", "", "value3"],
-        ["detail", "", "value3"],
-        ["detail", "", "value3"],
-        ["detail", "", "value3"],
-        ["detail", "", "value3"],
-        ["detail", "", "value3"],
-        ["detail", "", "value3"],
-        ["detail", "", "value3"],
-        ["detail", "", "value3"],
-        ["detail", "", "value3"],
-        ["detail", "", "value3"],
-        ["detail", "", "value3"],
-        ["detail", "", "value3"],
-        ["detail", "", "value3"],
-        ["detail", "", "value3"],
-        ["detail", "", "value3"],
-    ]
-]
-
-testData["groups_table"] = [[
-    ["Nagy Csoport", "images/db_icons/1.png"],
-    ["Kis Csoport", "images/db_icons/2.png"]
-]]
-
-testData["fuelgas_table"] = [[
-    ["date", "", "2013.10.27 12:42"],
-    ["controller_name", "", "name"],
-    ["nozzle_number", "", "2"],
-    ["fuelgas_suction", "", "78"],
-    ["errorneous_suction", "", "78"],
-    ["counter_before_stop", "", "45"]
-]]
-
 
 class CommonView(View):
     def authenticate(self, username, password):
@@ -131,9 +36,9 @@ class GetTreeNode(CommonView):
 
 
 class GetCards(CommonView):
-    def get(self, request, username, password, fromDate, toDate, node):
+    def get(self, request, username, password, fromDate, toDate, node, isMetric):
         self.tableStart("GetCards", username, password)
-        data = Kartyak.Details(node, username)
+        data = Kartyak.Details(node, username, fromDate, toDate)
         return self.tableEnd(request, data)
 
 
@@ -141,6 +46,13 @@ class GetRefuelingDetails(CommonView):
     def get(self, request, username, password, fromDate, toDate, node, isMetric):
         self.tableStart("GetRefuelingDetails", username, password)
         data = Tankolasok.Details(node, username, fromDate, toDate, isMetric)
+        return self.tableEnd(request, data)
+
+
+class GetTankDetails(CommonView):
+    def get(self, request, username, password, fromDate, toDate, node, isMetric):
+        self.tableStart("GetTankDetails", username, password)
+        data = Tartalyok.Details(node, username, isMetric)
         return self.tableEnd(request, data)
 
 
