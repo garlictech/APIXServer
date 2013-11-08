@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8
 from django.http import HttpResponse
-from models import Kartyak, Treenode, Tankolasok, Tartalyok
+from models import Kartyak, Treenode, Tankolasok, Tartalyok, Vezerlok
 from models import User as AvisUser
 import json
 from django.views.generic import View
@@ -12,6 +12,7 @@ reload(sys)
 sys.setdefaultencoding("utf-8")
 
 logger = logging.getLogger(__name__)
+
 
 class CommonView(View):
     def authenticate(self, username, password):
@@ -35,7 +36,7 @@ class GetTreeNode(CommonView):
         return self.tableEnd(request, data)
 
 
-class GetCards(CommonView):
+class GetCardDetails(CommonView):
     def get(self, request, username, password, fromDate, toDate, node, isMetric):
         self.tableStart("GetCards", username, password)
         data = Kartyak.Details(node, username, fromDate, toDate)
@@ -53,6 +54,13 @@ class GetTankDetails(CommonView):
     def get(self, request, username, password, fromDate, toDate, node, isMetric):
         self.tableStart("GetTankDetails", username, password)
         data = Tartalyok.Details(node, username, isMetric)
+        return self.tableEnd(request, data)
+
+
+class GetControllerDetails(CommonView):
+    def get(self, request, username, password, fromDate, toDate, node, isMetric):
+        self.tableStart("GetControllerDetails", username, password)
+        data = Vezerlok.Details(node, username)
         return self.tableEnd(request, data)
 
 

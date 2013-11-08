@@ -50,6 +50,16 @@ def GenerateTemperatureString(tableId, temperatureField, isMetric):
     return '%s."%s"' % (tableId, temperatureField) if isMetric == "1" else '(((%s."%s")*9)/5)+32 as "%s"' % (tableId, temperatureField, temperatureField)
 
 
+def GenerateParentString(node):
+    parentStr = ""
+
+    node = "-1"
+    for i in range(0, 9):
+        parentStr += '("parent%d"=%s) or ' % (i, node)
+
+    return parentStr
+
+
 class AuthGroup(models.Model):
     id = models.IntegerField(primary_key=True, db_column='ID')  # Field name made lowercase.
     name = models.CharField(max_length=80, unique=True, db_column='NAME')  # Field name made lowercase.
@@ -367,12 +377,7 @@ class Tartalyok(models.Model):
 
     @staticmethod
     def Details(node, user, isMetric):
-        parentStr = ""
-
-        node = "-1"
-        for i in range(0, 9):
-            parentStr += '("parent%d"=%s) or ' % (i, node)
-
+        parentStr = GenerateParentString(node)
         temperature_expr = GenerateTemperatureString("a", "hofok", isMetric)
         maxLiter_expr = '(a."max_liter" - a."keszlet") as max_liter' if isMetric else 'Trunc((a."max_liter" - a."keszlet")/3.75) as "max_liter"'
 
@@ -382,7 +387,7 @@ class Tartalyok(models.Model):
 
         queryString = (queryString_metric if isMetric == '1' else queryString_us)
 
-        return ExecuteRawQuery(Tartalyok.objects, queryString, "tank_details");
+        return ExecuteRawQuery(Tartalyok.objects, queryString, "tank_details")
 
     class Meta:
         db_table = 'tartalyok'
@@ -446,12 +451,12 @@ class Treenode(models.Model):
             "data": [[
                 ["refuelling_details", "", "", "refueling_details/%s" % node, "compound_table_view"],
                 ["refuelling_summary"],
-                ["card_details", "", "", "cards/%s" % node, "compound_table_view"],
+                ["card_details", "", "", "card_details/%s" % node, "compound_table_view"],
                 ["card_summary"],
                 ["tank_details", "", "", "tank_details/%s" % node, "compound_table_view"],
                 ["tank_diagram"],
                 ["tank_summary"],
-                ["controller_details"],
+                ["controller_details", "", "", "controller_details/%s" % node, "compound_table_view"],
                 ["controller_summary"],
                 ["fuelgas_data"]
             ]]
@@ -533,9 +538,8 @@ class User(models.Model):
             return False
 
 
-
 class Vezerlok(models.Model):
-    abs_id = models.DecimalField(unique=True, null=True, max_digits=10, decimal_places=0, blank=True)
+    abs_id = models.DecimalField(primary_key=True, max_digits=10, decimal_places=0)
     num = models.IntegerField(null=True, blank=True)
     nev = models.CharField(max_length=70, blank=True)
     tipus = models.CharField(max_length=20, blank=True)
@@ -582,6 +586,14 @@ class Vezerlok(models.Model):
     p2_tmr = models.IntegerField(null=True, blank=True)
     p3_tmr = models.IntegerField(null=True, blank=True)
     p4_tmr = models.IntegerField(null=True, blank=True)
-    class Meta:
-        db_table = 'vezerlok'
 
+    class Meta:
+        db_table = 'Vezerlok'
+
+    @staticmethod
+    def Details(node, user):
+        parentStr = GenerateParentString(node)
+
+        queryString = '''select v.* from "Vezerlok" v, (select "nev" from "TreeNode" where (%s ("dbindx"=%s)) and ("azonosito"<>'') and("tipus"='0') and("user"='%s') Group by "nev"  ) al where (v."nev"=al."nev")and(v."delete"='') order by v."nev"''' % (parentStr, node, user)
+
+        return ExecuteRawQuery(Vezerlok.objects, queryString, "controller_details")
