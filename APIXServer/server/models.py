@@ -46,6 +46,10 @@ def ExecuteRawQuery(objects, queryString, titleId, exclude=[]):
         }
 
 
+def GenerateTemperatureString(tableId, temperatureField, isMetric):
+    return '%s."%s"' % (tableId, temperatureField) if isMetric == "1" else '(((%s."%s")*9)/5)+32 as "%s"' % (tableId, temperatureField, temperatureField)
+
+
 class AuthGroup(models.Model):
     id = models.IntegerField(primary_key=True, db_column='ID')  # Field name made lowercase.
     name = models.CharField(max_length=80, unique=True, db_column='NAME')  # Field name made lowercase.
@@ -260,9 +264,8 @@ class Tankolasok(models.Model):
 
     @staticmethod
     def Details(node, username, fromDate, toDate, isMetric):
-        temperature_expr = 'v."hofok"' if isMetric == "1" else '(((v."hofok")*9)/5)+32 as "hofok"'
-
-        t_temperature_expr = 'v."t_hofok"' if isMetric  == "1" else '(((v."t_hofok")*9)/5)+32 as "t_hofok"'
+        temperature_expr = GenerateTemperatureString('v', "hofok", isMetric)
+        t_temperature_expr = GenerateTemperatureString('v', "t_hofok", isMetric)
 
         query = '''SELECT v."abs_id", v."vezerlo", v."sorszam", v."helyszin", v."datumido", v."dt_num", v."sofor_id", v."sofor_card", v."sofor_nev", v."sofor_csop", v."gep_id", v."gep_card", v."gep_nev", v."gep_csop", v."status_c", v."kut", v."km", v."u_ora", v."m_lev", v."e_km", v."e_uo", v."km_n", v."uo_n", v."km_m", v."uo_m", v."km_n_d", v."uo_n_d", v."mil_a",  v."s_n_d", v."km_a", v."uo_a", %s, v."ua_mm", v."v_mm", %s, v."e_ar", v."ua_tipn", v."tipus", v."liter", v."liter15", v."status_n", v.RDB$DB_KEY from "Tankolasok" v, (SELECT a."abs_id", a."vezerlo", a."gep_csop",a."kut" FROM "Tankolasok" a, (SELECT p.MYVEZ, p.MYKUT, MYCSOP FROM H_TANK(%s, \'%s\', -1) p) al WHERE ((a."vezerlo"=al."MYVEZ")AND(a."kut"=al."MYKUT"))or(a."gep_csop"=al.MYCSOP) GROUP by a."abs_id", a."vezerlo", a."kut", a."gep_csop") al2 WHERE v."abs_id"=al2."abs_id" and (v."dt_num">=%f) and (v."dt_num"<=%f)order by v."dt_num";''' % (temperature_expr, t_temperature_expr, int(node) , username,
             float(fromDate), float(toDate))
@@ -370,8 +373,10 @@ class Tartalyok(models.Model):
         for i in range(0, 9):
             parentStr += '("parent%d"=%s) or ' % (i, node)
 
+        temperature_expr = GenerateTemperatureString("a", "hofok", isMetric)
+        maxLiter_expr = '(a."max_liter" - a."keszlet") as max_liter' if isMetric else 'Trunc((a."max_liter" - a."keszlet")/3.75) as "max_liter"'
 
-        queryString = '''SELECT a."num", a."nev", a."helyszin", a."icon", a."ua_tip", a."es", a."es_vez", a."p1", a."p1_vez", a."p2", a."p2_vez", a."p3", a."p3_vez", a."p4", a."p4_vez", a."sajat", a."keszlet", a."keszlet15", a."kg", a."szazalek", a."csop", a."datumido", a."dt_num", a."suruseg", a."delete", a."zarolt_l", a."zarolt_mm", a."ua_tipn", a."a0", a."hofok", (a."max_liter" - a."keszlet") as max_liter,a.RDB$DB_KEY from "Tartalyok" a, (select "nev" from "TreeNode" where (%s ("dbindx"=%s)) and("delete"='') and ("azonosito"<>'')and("tipus"='2') and ("user"='%s') Group by "nev"  ) al where (a."nev"=al."nev")and(a."delete"='') order by a."nev";''' % (parentStr, node , user)
+        queryString = '''SELECT a."num", a."nev", a."helyszin", a."icon", a."ua_tip", a."es", a."es_vez", a."p1", a."p1_vez", a."p2", a."p2_vez", a."p3", a."p3_vez", a."p4", a."p4_vez", a."sajat", a."keszlet", a."keszlet15", a."kg", a."szazalek", a."csop", a."datumido", a."dt_num", a."suruseg", a."delete", a."zarolt_l", a."zarolt_mm", a."ua_tipn", a."a0", %s, %s, a.RDB$DB_KEY from "Tartalyok" a, (select "nev" from "TreeNode" where (%s ("dbindx"=%s)) and("delete"='') and ("azonosito"<>'')and("tipus"='2') and ("user"='%s') Group by "nev"  ) al where (a."nev"=al."nev")and(a."delete"='') order by a."nev";''' % (temperature_expr, maxLiter_expr, parentStr, node, user)
 
         return ExecuteRawQuery(Tartalyok.objects, queryString, "tank_details");
 
