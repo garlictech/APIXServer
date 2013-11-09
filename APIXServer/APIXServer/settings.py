@@ -21,7 +21,7 @@ DATABASES = {
         'PASSWORD': 'Canon1973',    # db user password
         'HOST': '127.0.0.1',        # Your host machine
         'PORT': '3050',             # If is empty, use default 3050
-        'OPTIONS' : {'charset':'WIN1250'}
+        'OPTIONS': {'charset': 'WIN1250'}
     }
 }
 

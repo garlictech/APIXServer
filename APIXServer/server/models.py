@@ -16,6 +16,7 @@ from django.db import models
 from django.conf import settings
 import decimal
 
+
 def ExecuteRawQuery(objects, queryString, titleId, exclude=[]):
         data = []
         result = objects.raw(queryString)
@@ -391,7 +392,7 @@ class Tartalyok(models.Model):
 
         queryString = (queryString_metric if isMetric == '1' else queryString_us)
 
-        return ExecuteRawQuery(Tartalyok.objects, queryString, "tank_details")
+        return ExecuteRawQuery(Tartalyok.objects, queryString, "tank_details", ["icon", "dt_num", "delete", "db_key"])
 
     class Meta:
         db_table = 'tartalyok'
@@ -600,4 +601,4 @@ class Vezerlok(models.Model):
 
         queryString = '''select v.* from "Vezerlok" v, (select "nev" from "TreeNode" where (%s ("dbindx"=%s)) and ("azonosito"<>'') and("tipus"='0') and("user"='%s') Group by "nev"  ) al where (v."nev"=al."nev")and(v."delete"='') order by v."nev"''' % (parentStr, node, user)
 
-        return ExecuteRawQuery(Vezerlok.objects, queryString, "controller_details")
+        return ExecuteRawQuery(Vezerlok.objects, queryString, "controller_details", ["icon", "delete"])
