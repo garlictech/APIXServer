@@ -15,8 +15,7 @@ import os
 from django.db import models
 from django.conf import settings
 import sys
-reload(sys)
-sys.setdefaultencoding("utf-8")
+
 
 def ExecuteRawQuery(objects, queryString, titleId, exclude=[]):
         data = []
@@ -31,7 +30,7 @@ def ExecuteRawQuery(objects, queryString, titleId, exclude=[]):
 
             for column_name in columnNames:
                 s1 = unicode(column_name, errors='replace')
-                s2 = str(getattr(p, column_name)).decode('cp1252')
+                s2 = getattr(p, column_name)
                 subset.append([s1, "", s2])
 
             data.append(subset)

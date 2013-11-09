@@ -7,9 +7,7 @@ import json
 from django.views.generic import View
 import logging
 from django.core.exceptions import PermissionDenied
-import sys
-reload(sys)
-sys.setdefaultencoding("utf-8")
+
 
 logger = logging.getLogger(__name__)
 
