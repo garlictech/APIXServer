@@ -14,8 +14,7 @@ import os
 
 from django.db import models
 from django.conf import settings
-import sys
-
+import decimal
 
 def ExecuteRawQuery(objects, queryString, titleId, exclude=[]):
         data = []
@@ -31,6 +30,12 @@ def ExecuteRawQuery(objects, queryString, titleId, exclude=[]):
             for column_name in columnNames:
                 s1 = unicode(column_name, errors='replace')
                 s2 = getattr(p, column_name)
+
+                if type(s2) is str:
+                    s2 = s2.decode("windows-1250")
+                elif type(s2) is decimal.Decimal:
+                    s2 = str(s2)
+
                 subset.append([s1, "", s2])
 
             data.append(subset)
