@@ -15,6 +15,8 @@ import os
 from django.db import models
 from django.conf import settings
 import decimal
+from PIL import Image
+import StringIO
 
 
 def ExecuteRawQuery(objects, queryString, titleId, exclude=[]):
@@ -418,6 +420,7 @@ class Tlevel(models.Model):
     class Meta:
         db_table = 'tlevel'
 
+
 class Treenode(models.Model):
     absindx = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
     user = models.CharField(max_length=70, blank=True)
@@ -497,25 +500,58 @@ class Treenode(models.Model):
             }
 
     @staticmethod
+    def openIconFile(iconFileName):
+        iconPath = os.path.join(settings.PROJECT_ROOT, "APIXServer", "icons")
+        filename = os.path.join(iconPath, iconFileName)
+        return Image.open(filename)
+
+    @staticmethod
+    def GetIcon(iconNum):
+        try:
+            return Treenode.openIconFile("%03d.ico" % iconNum)
+        except:
+            return None
+
+    @staticmethod
+    def GetOverlayIcon(node):
+        iconName = None
+        try:
+            t = int(node.tipus.strip())
+            if t == 0:
+                iconName = "DefUnit48.ico"
+            if t == 1:
+                iconName = "GrpIco.ico"
+            if t == 2:
+                iconName = "DefTank48.ico"
+        except ValueError:
+            return None
+
+        return Treenode.openIconFile(iconName) if iconName else None
+
+    @staticmethod
+    def OverlayIcon(bottomIcon, topIcon):
+        return Image.alpha_composite(bottomIcon, topIcon)
+
+    @staticmethod
     def GetData(username, dbindx):
         nodes = Treenode.objects.filter(user=username, parent0=dbindx)
         data = []
 
         for node in nodes:
-            iconBlob = ""
+            overlayIcon = Treenode.GetOverlayIcon(node)
+            iconBlob = Treenode.GetIcon(node.icon)
+            im_data = ""
 
-            if node.icon >= 0:
-                filename = os.path.join(settings.PROJECT_ROOT, "APIXServer", "icons",  "%03d.ico" % node.icon)
+            if iconBlob:
+                if overlayIcon:
+                    iconBlob = Treenode.OverlayIcon(iconBlob, overlayIcon)
+                output = StringIO.StringIO()
+                iconBlob.save(output, 'jpeg')
+                im_data = output.getvalue()
 
-                try:
-                    with open(filename, "rb") as image_file:
-                        iconBlob = base64.b64encode(image_file.read())
-                except:
-                    filename = os.path.join(settings.PROJECT_ROOT, "APIXServer", "icons", "construction.png")
-                    with open(filename, "rb") as image_file:
-                        iconBlob = base64.b64encode(image_file.read())
-
-            data.append([node.nev, iconBlob, "", "treenode/%d" % node.dbindx, "simple_table_view"])
+            data_url = base64.b64encode(im_data)
+            data.append([node.nev, data_url, "", "treenode/%d" % node.dbindx, "simple_table_view"])
+            #data.append([node.nev, base64.b64encode(iconBlob.tostring()), "", "treenode/%d" % node.dbindx, "simple_table_view"])
 
         return [data]
 
