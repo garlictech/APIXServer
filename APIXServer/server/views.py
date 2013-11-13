@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8
 from django.http import HttpResponse
-from models import Kartyak, Treenode, Tankolasok, Tartalyok, Vezerlok
+from models import Kartyak, Treenode, Tankolasok, Tartalyok, Vezerlok, Bgoz
 from models import User as AvisUser
 import json
 from django.views.generic import View
@@ -59,6 +59,13 @@ class GetControllerDetails(CommonView):
     def get(self, request, username, password, fromDate, toDate, node, isMetric):
         self.tableStart("GetControllerDetails", username, password)
         data = Vezerlok.Details(node, username)
+        return self.tableEnd(request, data)
+
+
+class GetFuelGasDetails(CommonView):
+    def get(self, request, username, password, fromDate, toDate, isMetric, controllerNum, pistolNum):
+        self.tableStart("GetFuelGasDetails", username, password)
+        data = Bgoz.Details(fromDate, toDate, controllerNum, pistolNum)
         return self.tableEnd(request, data)
 
 

@@ -1,5 +1,5 @@
 from django.conf.urls import patterns, url
-from server.views import GetTreeNode, Login, GetCardDetails, GetRefuelingDetails, GetRootTable, GetTankDetails, GetControllerDetails
+from server.views import GetTreeNode, Login, GetCardDetails, GetRefuelingDetails, GetRootTable, GetTankDetails, GetControllerDetails, GetFuelGasDetails
 
 
 # Uncomment the next two lines to enable the admin:
@@ -11,6 +11,7 @@ str = '^(?P<username>\w+)/(?P<password>\w*)/(?P<fromDate>\d+\.?\d+)/(?P<toDate>\
 urlpatterns = patterns('server.views',
     url(str % ('treenode', '(?P<dbindx>\w+)/'), GetTreeNode.as_view(), name='get_treenode'),
     url(str % ('root_table', ''), GetRootTable.as_view(), name='get_root_table'),
+    url(str % ('fuelgas_details', '(?P<controllerNum>\w+)/(?P<pistolNum>\w+)/'), GetFuelGasDetails.as_view(), name='get_fuelgas_details'),
     url(str % ('refueling_details', '(?P<node>\w+)/'), GetRefuelingDetails.as_view(), name='get_refueling_details'),
     url(str % ('tank_details', '(?P<node>\w+)/'), GetTankDetails.as_view(), name='get_tank_details'),
     url(str % ('card_details', '(?P<node>\w+)/'), GetCardDetails.as_view(), name='get_cards_details'),

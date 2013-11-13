@@ -25,7 +25,10 @@ def ExecuteRawQuery(objects, queryString, titleId, exclude=[]):
         columnNames = result.columns[:]
 
         for i in exclude:
-            columnNames.remove(i)
+            try:
+                columnNames.remove(i)
+            except ValueError:
+                print "Column %s cannot be found" %i
 
         for p in result:
             subset = []
@@ -118,7 +121,7 @@ class AuthUserUserPermissions(models.Model):
         db_table = 'auth_user_user_permissions'
 
 class Bgoz(models.Model):
-    mynum = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    mynum = models.DecimalField(primary_key=True, max_digits=10, decimal_places=0)
     datumido = models.CharField(max_length=30, blank=True)
     dt_num = models.FloatField(null=True, blank=True)
     vez = models.CharField(max_length=30, blank=True)
@@ -127,8 +130,16 @@ class Bgoz(models.Model):
     hiba = models.IntegerField(null=True, blank=True)
     idozito = models.IntegerField(null=True, blank=True)
     ervenyes = models.CharField(max_length=10, blank=True)
+
     class Meta:
-        db_table = 'bgoz'
+        db_table = 'Bgoz'
+
+    @staticmethod
+    def Details(fromDate, toDate, controllerNum, pistolNum):
+        queryString= '''SELECT * from "Bgoz" where ("dt_num">=%s)and("dt_num"<%s)and("vez"='%s')and("piszt"=%s) and ("ervenyes"<>'') order by "dt_num";''' % (fromDate, toDate, controllerNum, pistolNum)
+
+        return ExecuteRawQuery(Bgoz.objects, queryString, "fuelgas_details", ["mynum", "dt_num", "ervenyes"])
+
 
 class Csoportok(models.Model):
     num = models.IntegerField(primary_key=True, blank=True, db_column='num')
@@ -219,7 +230,7 @@ class Kartyak(models.Model):
             and(v."azonosito"=p.MYCARD)
             and(v."id"=p.MYID) order by v."nev";''' % (node , user)
 
-        return ExecuteRawQuery(Kartyak.objects, queryString, "card_details");
+        return ExecuteRawQuery(Kartyak.objects, queryString, "card_details", [""]);
 
     class Meta:
         db_table = 'Kartyak'
@@ -318,20 +329,14 @@ class Tankolasok(models.Model):
                 ["uo_n_d", "", p.uo_n_d],
                 ["mil_a", "", p.mil_a],
                 ["s_n_d", "", p.s_n_d],
-                ["km_a", "", p.km_a],
                 ["uo_a", "", p.uo_a],
-                ["hofok", "", p.hofok],
-                ["ua_mm", "", p.ua_mm],
-                ["v_mm", "", p.v_mm],
-                ["t_hofok", "", p.t_hofok],
                 ["hofok", "", p.hofok],
                 ["e_ar", "", p.e_ar],
                 ["ua_tipn", "", p.ua_tipn],
                 ["tipus", "", p.tipus],
                 ["liter", "", p.liter],
                 ["liter15", "", p.liter15],
-                ["mil_a", "", p.mil_a],
-                ["status_n", "", p.status_n]
+                ["mil_a", "", p.mil_a]
             ]
 
             for item in subset:
@@ -394,7 +399,7 @@ class Tartalyok(models.Model):
 
         queryString = (queryString_metric if isMetric == '1' else queryString_us)
 
-        return ExecuteRawQuery(Tartalyok.objects, queryString, "tank_details", ["icon", "dt_num", "delete", "db_key"])
+        return ExecuteRawQuery(Tartalyok.objects, queryString, "tank_details", ["num", "es", "es_vez", "icon", "dt_num", "delete", "db_key", "p1", "p1_vez", "p2", "p2_vez", "p3", "p3_vez", "p4", "p4_vez", "csop", "zarolt_mm", "a0", "max_liter", "ua_tipn", "hofok"])
 
     class Meta:
         db_table = 'tartalyok'
@@ -632,9 +637,44 @@ class Vezerlok(models.Model):
         db_table = 'Vezerlok'
 
     @staticmethod
+    def GetActualField(set, attrName):
+        for line in set:
+            if line[0] == attrName:
+                return line[2]
+
+    @staticmethod
+    def DeleteAllFields(result, fieldName):
+        for set in result["data"]:
+            for line in set:
+                for k in range(1, 5):
+                    type_id = "t%dn" % k
+                    if line[0] == type_id:
+                        set.remove(line)
+                        Vezerlok.DeleteAllFields(result, fieldName)
+
+    @staticmethod
     def Details(node, user):
         parentStr = GenerateParentString(node)
 
         queryString = '''select v.* from "Vezerlok" v, (select "nev" from "TreeNode" where (%s ("dbindx"=%s)) and ("azonosito"<>'') and("tipus"='0') and("user"='%s') Group by "nev"  ) al where (v."nev"=al."nev")and(v."delete"='') order by v."nev"''' % (parentStr, node, user)
 
-        return ExecuteRawQuery(Vezerlok.objects, queryString, "controller_details", ["icon", "delete"])
+        result = ExecuteRawQuery(Vezerlok.objects, queryString, "controller_details", ["icon", "abs_id", "num", "delete", "path", "t1", "t2", "t3", "t4", "l_tip", "com", "cim", "ido", "dl_dt", "com_azon", "time_chk", "bgoz", "b_side_vez", "b_side_p", "p1_sz", "p2_sz", "p3_sz", "p4_sz", "p1_err", "p2_err", "p3_err", "p4_err", "p1_tmr", "p2_tmr", "p3_tmr", "p4_tmr", "sajat", "tipus"])
+
+        for set in result["data"]:
+            name = Vezerlok.GetActualField(set, "nev").strip()
+            for line in set:
+                for n in range(1, 5):
+                    type_id = "t%dn" % n
+                    pistol_id = "p%d" % n
+                    fuel_type = Vezerlok.GetActualField(set, type_id)
+                    pistol_num = Vezerlok.GetActualField(set, pistol_id)
+
+                    if line[0] == pistol_id and fuel_type == 1:  # 1 means benzin
+                        line.append("fuelgas_details/%s/%d" % (name, pistol_num))
+                        line.append("compound_table_view")
+
+        for n in range(1, 5):
+            type_id = "t%dn" % n
+            Vezerlok.DeleteAllFields(result, type_id)
+
+        return result
