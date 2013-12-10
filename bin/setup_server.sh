@@ -15,8 +15,11 @@ echo "UseDNS no" >> $SSH_CONFIG_FILE
 echo "AllowUsers $USER" >> $SSH_CONFIG_FILE
 echo "PermitRootLogin no" >> $SSH_CONFIG_FILE
 su -l $USER
-$APT_COMMAND libapache2-mod-wsgi apache2 apache2.2-common apache2-mpm-prefork apache2-utils libexpat1 ssl-cert vim python-setuptools firebird2.5-superclassic python-setuptools
+$APT_COMMAND libapache2-mod-wsgi apache2 apache2.2-common apache2-mpm-prefork apache2-utils libexpat1 ssl-cert vim python-setuptools firebird2.5-superclassic python-setuptools gcc python-dev libjpeg-dev zlib1g-dev libpng12-dev, libfreetype6-dev libfreetype6 g++
 $EASY_INSTALL pip
+$PIP_INSTALL Pillow
+$PIP_INSTALL numpy
+$PIP_INSTALL matplotlib
 dpkg-reconfigure firebird2.5-superclassic
 reload ssh
 ssh-keygen
