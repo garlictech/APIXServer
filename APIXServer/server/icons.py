@@ -7,7 +7,7 @@ import StringIO
 import base64
 
 
-class Icons():
+class _Icons():
     def __init__(self):
         self.icons = []
         self.iconPath = os.path.join(settings.PROJECT_ROOT, "APIXServer", "icons")
@@ -65,3 +65,11 @@ class Icons():
 
     def icon(self, index):
         return self.icons[index]
+
+
+class Icons:
+    theSingleInstance = _Icons()
+
+    def __init__(self):
+        self.__dict__ = Icons.theSingleInstance.__dict__
+        self.__class__ = Icons.theSingleInstance.__class__

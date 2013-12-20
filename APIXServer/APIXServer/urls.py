@@ -1,5 +1,5 @@
 from django.conf.urls import patterns, url
-from server.views import GetTreeNode, Login, GetCardDetails, GetCardSummary, GetRefuelingDetails, GetRootTable, GetTankDetails, GetTankWaterHeightDiagram, GetTankTemperatureDiagram, GetTankInventoryDiagram, GetControllerDetails, GetFuelGasDiagrams, GetTankSummary, GetRefuelingSummary, GetControllerSummary, GetGroupDetails, GetGroupSummary
+from server.views import GetTreeNode, Login, GetCardDetails, GetCardSummary, GetRefuelingDetails, GetRootTable, GetTankDetails, GetTankWaterHeightDiagram, GetTankTemperatureDiagram, GetTankInventoryDiagram, GetControllerDetails, GetFuelGasDiagram, GetTankSummary, GetRefuelingSummary, GetControllerSummary, GetGroupDetails, GetGroupSummary
 
 # Uncomment the next two lines to enable the admin:
 # from django.contrib import admin
@@ -10,7 +10,7 @@ str = '^(?P<username>\w+)/(?P<password>\w*)/(?P<fromDate>\d+\.?\d+)/(?P<toDate>\
 urlpatterns = patterns('server.views',
     url(str % ('treenode', '(?P<dbindx>\w+)/(?P<treenodeType>\w+)/'), GetTreeNode.as_view(), name='get_treenode'),
     url(str % ('root_table', ''), GetRootTable.as_view(), name='get_root_table'),
-    url(str % ('fuelgas_diagrams', '(?P<controllerNum>\w+)/(?P<pistolNum>\w+)/(?P<language>\w+)/(?P<isMetric>\d{1})/'), GetFuelGasDiagrams.as_view(), name='get_fuelgas_diagrams'),
+    url(str % ('fuelgas_diagram', '(?P<controllerNum>\w+)/(?P<pistolNum>\w+)/(?P<language>\w+)/(?P<isMetric>\d{1})/'), GetFuelGasDiagram.as_view(), name='get_fuelgas_diagram'),
     url(str % ('refueling_details', '(?P<node>\w+)/(?P<treenodeType>\w+)/'), GetRefuelingDetails.as_view(), name='get_refueling_details'),
     url(str % ('refueling_summary', '(?P<node>\w+)/(?P<treenodeType>\w+)/'), GetRefuelingSummary.as_view(), name='get_refueling_summary'),
 
