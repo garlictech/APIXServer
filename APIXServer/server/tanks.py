@@ -11,21 +11,29 @@ class Tanks(Collection, Tartalyok):
         "sensitiveTo": ["DatesChanged", "MetricChanged"]
     }
 
-    def getQueryString(self, node, user):
+    DBGRID_TAB_ID = 3
+
+    def getQueryString(self, node, user, order_by):
         parentStr = self.generateParentString(node)
         maxLiter_expr = '(a."max_liter" - a."keszlet") as max_liter'
 
-        queryString = '''SELECT a."num", a."nev", a."helyszin", a."icon", a."ua_tip", a."es", a."es_vez", a."p1", a."p1_vez", a."p2", a."p2_vez", a."p3", a."p3_vez", a."p4", a."p4_vez", a."sajat", a."keszlet", a."keszlet15", a."kg", a."szazalek", a."csop", a."datumido", a."dt_num", a."suruseg", a."delete", a."zarolt_l", a."zarolt_mm", a."a0", a."hofok", %s, a.RDB$DB_KEY from "Tartalyok" a, (select "nev" from "TreeNode" where (%s ("dbindx"=%s)) and("delete"='') and ("azonosito"<>'')and("tipus"='2') and ("user"='%s') Group by "nev"  ) al where (a."nev"=al."nev")and(a."delete"='') order by a."nev";''' % (maxLiter_expr, parentStr, node, user)
+        queryString = '''SELECT a."num", a."nev", a."helyszin", a."icon", a."ua_tip", a."es", a."es_vez", a."p1", a."p1_vez", a."p2", a."p2_vez", a."p3", a."p3_vez", a."p4", a."p4_vez", a."sajat", a."keszlet", a."keszlet15", a."kg", a."szazalek", a."csop", a."datumido", a."dt_num", a."suruseg", a."delete", a."zarolt_l", a."zarolt_mm", a."a0", a."hofok", %s, a.RDB$DB_KEY from "Tartalyok" a, (select "nev" from "TreeNode" where (%s ("dbindx"=%s)) and("delete"='') and ("azonosito"<>'')and("tipus"='2') and ("user"='%s') Group by "nev"  ) al where (a."nev"=al."nev")and(a."delete"='') %s;''' % (maxLiter_expr, parentStr, node, user, order_by)
 
         return queryString
 
     def details(self, node, user):
-        queryString = self.getQueryString(node, user)
+        fields = self.getFieldsFromDBGrid(node, user, self.DBGRID_TAB_ID)
+        queryString = self.getQueryString(node, user, fields["order_by"])
+
         summaryMenu = [
             ["tank_summary", "", "", "tank_summary/%s" % node, "simple_table_view"]
         ]
 
-        result = self.executeRawQuery(Tartalyok.objects, queryString, ["es", "es_vez", "icon", "dt_num", "delete", "db_key", "csop", "zarolt_mm", "a0", "max_liter"], summaryMenu)
+        # Temporarily, add "num" field, it is required to identify the tanks
+        # in the diagrams.
+        fields["fields"].append("num")
+
+        result = self.executeRawQuery(Tartalyok.objects, queryString, fields["fields"], summaryMenu)
 
         data = result["data"]
 
@@ -53,7 +61,8 @@ class Tanks(Collection, Tartalyok):
         return [field, "", str(sum)]
 
     def summary(self, node, user):
-        queryString = self.getQueryString(node, user)
+        fields = self.getFieldsFromDBGrid(node, user, self.DBGRID_TAB_ID)
+        queryString = self.getQueryString(node, user, fields["order_by"])
         results = Tartalyok.objects.raw(queryString)
         data = []
         sum_keszlet = 0
@@ -142,9 +151,9 @@ class Tanks(Collection, Tartalyok):
 
     def getDiagramQueryString(self, fromDate, toDate, tankNum, isMetric):
         if isMetric == "1":
-            return '''SELECT a."num", a."tartaly", a."datumido", a."dt_num", a."ua_mm", a."h2o_mm", a."hofok",  a."ua_l", a."ua_l15", a."h2o_l",a."tipus", a."vez", a."kut", a."e_ar", a."gcsop",  a."delete", a.RDB$DB_KEY from "TLevel" a where (a."dt_num">=%s)and(a."dt_num"<%s)and(a."tartaly"=%s) and (a."delete" is NULL )and(a."kut">80) order by a."dt_num"''' % (toDate, fromDate, tankNum)
+            return '''SELECT a."num", a."dt_num", a."h2o_mm", a."hofok",  a."ua_l", a."ua_l15" from "TLevel" a where (a."dt_num">=%s)and(a."dt_num"<%s)and(a."tartaly"=%s) and (a."delete" is NULL )and(a."kut">80) order by a."dt_num"''' % (fromDate, toDate, tankNum)
         else:
-            return '''SELECT a."num", a."tartaly", a."datumido", a."dt_num", a."ua_mm", a."h2o_mm", (((a."hofok")*9)/5)+32 as "hofok", Trunc((a."ua_l")/3.79) as "ua_l", Trunc((a."ua_l15")/3.79) as "ua_l15", a."h2o_l", a."tipus", a."vez", a."kut", a."e_ar", a."gcsop",  a."delete", a.RDB$DB_KEY from "TLevel" a where (a."dt_num">=%s)and(a."dt_num"<%s)and(a."tartaly"=%s) and (a."delete" is NULL )and(a."kut">80) order by a."dt_num"''' % (toDate, fromDate, tankNum)
+            return '''SELECT a."num", a."tartaly", a."datumido", a."dt_num", a."ua_mm", a."h2o_mm", (((a."hofok")*9)/5)+32 as "hofok", Trunc((a."ua_l")/3.79) as "ua_l", Trunc((a."ua_l15")/3.79) as "ua_l15", a."h2o_l", a."tipus", a."vez", a."kut", a."e_ar", a."gcsop",  a."delete", a.RDB$DB_KEY from "TLevel" a where (a."dt_num">=%s)and(a."dt_num"<%s)and(a."tartaly"=%s) and (a."delete" is NULL )and(a."kut">80) order by a."dt_num"''' % (fromDate, toDate, tankNum)
 
     def drawDiagram(self, axisDesc, queryString):
         return self.draw(axisDesc, Tlevel.objects.raw(queryString), "tank_diagram")

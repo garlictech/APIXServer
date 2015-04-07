@@ -5,7 +5,7 @@ from server.views import GetTreeNode, Login, GetCardDetails, GetCardSummary, Get
 # from django.contrib import admin
 # admin.autodiscover()
 
-str = '^(?P<username>\w+)/(?P<password>\w*)/(?P<fromDate>\d+\.?\d+)/(?P<toDate>\d+\.\d+)/%s/%s$'
+str = '^(?P<username>\w+)/(?P<password>\w*)/(?P<fromDate>\d+\.?\d+)/(?P<toDate>\d+\.?\d+)/%s/%s$'
 
 urlpatterns = patterns('server.views',
     url(str % ('treenode', '(?P<dbindx>\w+)/(?P<treenodeType>\w+)/'), GetTreeNode.as_view(), name='get_treenode'),

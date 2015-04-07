@@ -10,7 +10,9 @@ class Cards(Collection, Kartyak):
         "text_id": True
     }
 
-    def getQueryString(self, node, username, treenodeType):
+    DBGRID_TAB_ID = 2
+
+    def getQueryString(self, node, username, treenodeType, order_by):
         if treenodeType == self.COLLECTIONTYPE_USER_GROUPS_ID:
             return '''select v.*
                 from "Kartyak" v, A_CARD p
@@ -23,7 +25,7 @@ class Cards(Collection, Kartyak):
                 and(v."azonosito"=p.MYCARD)
                 and(v."id"=p.MYID) order by v."nev";''' % (node, username)
         elif treenodeType == self.COLLECTIONTYPE_PLACE_OF_USAGE_ID:
-            return '''select v.* from "Kartyak" v, (SELECT p.MYID FROM H_CARD(%s, \'%s\') p) al where (v."id"=al.MYID) order by v."nev";''' % (node, username)
+            return '''select v.* from "Kartyak" v, (SELECT p.MYID FROM H_CARD(%s, \'%s\') p) al where (v."id"=al.MYID) %s;''' % (node, username, order_by)
 
     @staticmethod
     def typeConverter(t):
@@ -39,12 +41,19 @@ class Cards(Collection, Kartyak):
         return t
 
     def details(self, node, username, treenodeType):
-        queryString = self.getQueryString(node, username, treenodeType)
+        fields = self.getFieldsFromDBGrid(node, username, self.DBGRID_TAB_ID)
+
+        queryString = self.getQueryString(node, username, treenodeType, fields["order_by"])
+
         summaryMenu = [["card_summary", "", "", "card_summary/%s/%s" % (node, treenodeType), "simple_table_view"]]
-        return self.executeRawQuery(Kartyak.objects, queryString, ["id", "vezerlo", "dt_num", "options", "icon", "actual"], summaryMenu, {'tipus': Cards.typeConverter})
+
+        return self.executeRawQuery(Kartyak.objects, queryString, fields["fields"], summaryMenu, {'tipus': Cards.typeConverter})
 
     def summary(self, node, username, treenodeType):
-        queryString = self.getQueryString(node, username, treenodeType)
+        fields = self.getFieldsFromDBGrid(node, username, self.DBGRID_TAB_ID)
+
+        queryString = self.getQueryString(node, username, treenodeType, fields["order_by"])
+
         results = Kartyak.objects.raw(queryString)
         data = []
         sCard = 0

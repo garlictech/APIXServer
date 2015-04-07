@@ -10,16 +10,7 @@ class Controllers(Collection, Vezerlok):
         "text_id": True
     }
 
-    @staticmethod
-    def TypeConverter(t):
-        if t == 1:
-            return "E95"
-        elif t == 2:
-            return "Diesel"
-        elif t == 3:
-            return "Jet"
-
-        return t
+    DBGRID_TAB_ID = 4
 
     def deleteAllFields(self, result, fieldName):
         for set in result["data"]:
@@ -30,19 +21,28 @@ class Controllers(Collection, Vezerlok):
                         set.remove(line)
                         self.deleteAllFields(result, fieldName)
 
-    def getQueryString(self, node, user):
+    def getQueryString(self, node, user, order_by):
         parentStr = self.generateParentString(node)
 
-        return '''select v.* from "Vezerlok" v, (select "nev" from "TreeNode" where (%s ("dbindx"=%s)) and ("azonosito"<>'') and("tipus"='0') and("user"='%s') Group by "nev"  ) al where (v."nev"=al."nev")and(v."delete"='') order by v."nev"''' % (parentStr, node, user)
+        return '''select v.* from "Vezerlok" v, (select "nev" from "TreeNode" where (%s ("dbindx"=%s)) and ("azonosito"<>'') and("tipus"='0') and("user"='%s') Group by "nev"  ) al where (v."nev"=al."nev")and(v."delete"='') %s''' % (parentStr, node, user, order_by)
 
     def details(self, node, user):
-        queryString = self.getQueryString(node, user)
-        summaryMenu = [["controller_summary", "", "", "controller_summary/%s" % node, "simple_table_view"]]
+        fields = self.getFieldsFromDBGrid(node, user, self.DBGRID_TAB_ID)
+        queryString = self.getQueryString(node, user, fields["order_by"])
 
-        result = self.executeRawQuery(Vezerlok.objects, queryString, ["icon", "abs_id", "num", "delete", "path", "t1", "t2", "t3", "t4", "l_tip", "com", "cim", "ido", "dl_dt", "com_azon", "time_chk", "bgoz", "b_side_vez", "b_side_p", "p1_sz", "p2_sz", "p3_sz", "p4_sz", "p1_err", "p2_err", "p3_err", "p4_err", "p1_tmr", "p2_tmr", "p3_tmr", "p4_tmr", "sajat", "tipus"], summaryMenu)
+        #summaryMenu = [["controller_summary", "", "", "controller_summary/%s" % node, "simple_table_view"]]
+        summaryMenu = []
+
+        # Add these fields temporarily, required by fuel type calculations.
+        # Will be removed from the final result.
+        for n in range(1, 5):
+            type_id = "t%dn" % n
+            fields["fields"].append(type_id)
+
+        result = self.executeRawQuery(Vezerlok.objects, queryString, fields["fields"], summaryMenu)
 
         for set in result["data"]:
-            name = self.self.getActualField(set, "nev").strip()
+            name = self.getActualField(set, "nev").strip()
             for line in set:
                 for n in range(1, 5):
                     type_id = "t%dn" % n
@@ -52,7 +52,7 @@ class Controllers(Collection, Vezerlok):
 
                     if line[0] == pistol_id:
                         if line[2]:
-                            line[2] = "%d (%s)" % (line[2], Controllers.TypeConverter(fuel_type))
+                            line[2] = "%d (%s)" % (line[2], Collection.FuelTypeConverter(fuel_type))
 
                         if fuel_type == 1:  # 1 means benzin
                             line.append("fuelgas_diagram/%s/%d" % (name, pistol_num))

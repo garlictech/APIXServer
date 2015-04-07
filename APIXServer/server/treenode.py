@@ -34,7 +34,7 @@ class Treenode(Collection, TreenodeModel):
     def GetRawNodes(username, dbindx):
         return TreenodeModel.objects.filter(
             user=username, parent0=dbindx, delete=""
-        ).order_by('nev')
+        ).order_by('dbindx')
 
     def getData(self, username, dbindx, collectionType):
         nodes = Treenode.GetRawNodes(username, dbindx)

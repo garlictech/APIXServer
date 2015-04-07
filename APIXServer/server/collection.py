@@ -8,6 +8,8 @@ import datetime
 from itertools import repeat
 import StringIO
 import base64
+from models import Dbgrid, TreenodeModel
+import re
 
 
 class Collection():
@@ -21,24 +23,19 @@ class Collection():
     IconDB = Icons()
 
     def executeRawQuery(
-        self, objects, queryString, exclude=[], summaryMenu=[], converters={}
+        self, objects, queryString, include=[], summaryMenu=[], converters={}
     ):
         data = []
         result = objects.raw(queryString)
-        columnNames = result.columns[:]
-
-        for i in exclude:
-            try:
-                columnNames.remove(i)
-            except ValueError:
-                print "Column %s cannot be found" % i
 
         for p in result:
             subset = []
-            subset.extend(summaryMenu)
-            subset.append(["new_section"])
 
-            for column_name in columnNames:
+            if summaryMenu:
+                subset.extend(summaryMenu)
+                subset.append(["new_section"])
+
+            for column_name in include:
                 s1 = unicode(column_name, errors='replace')
                 s2 = getattr(p, column_name)
 
@@ -48,7 +45,7 @@ class Collection():
                     s2 = str(s2)
 
                 if column_name in converters.keys():
-                    s2 = converters[column_name](s2.strip())
+                    s2 = converters[column_name](str(s2).strip())
 
                 subset.append([s1, "", s2])
 
@@ -109,7 +106,7 @@ class Collection():
         fig = plt.figure()
 
         for i in range(0, len(axisDesc)):
-            plt.plot_date(dateAxis, dataAxises[i], axisDesc[i]["line"], label=axisDesc[i]["label"])
+            plt.plot_date(dateAxis, dataAxises[i], axisDesc[i]["line"], label=axisDesc[i]["label"], fillstyle='full')
 
         if ylimit:
             ax = plt.subplot(111)
@@ -159,3 +156,42 @@ class Collection():
                 columnTranslated = "error number"
 
         return columnTranslated
+
+    def parseDbGrid(self, grid):
+        p = re.compile('FieldName..(\w*)')
+        return p.findall(grid)
+
+    def getParent(self, node):
+        return TreenodeModel.objects.get(dbindx=node).parent0
+
+    def getFieldsFromDBGrid(self, node, username, tabId):
+        try:
+            obj = Dbgrid.objects.get(user=username, node=node, ful_n=tabId)
+        except Dbgrid.DoesNotExist:
+            parent = self.getParent(node)
+
+            if parent:
+                return self.getFieldsFromDBGrid(parent.dbindx, username, tabId)
+            else:
+                return {
+                    "order_by": "",
+                    "fields": []
+                }
+
+        fields = self.parseDbGrid(obj.grid)
+
+        return {
+            "order_by": obj.sorrend,
+            "fields": fields
+        }
+
+    @staticmethod
+    def FuelTypeConverter(t):
+        if t == "1":
+            return "E95"
+        elif t == "2":
+            return "Diesel"
+        elif t == "3":
+            return "Jet"
+
+        return t

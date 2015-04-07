@@ -11,24 +11,31 @@ class Refuelling(Collection, Tankolasok):
         "sensitiveTo": ['DatesChanged']
     }
 
+    DBGRID_TAB_ID = 1
+
     @staticmethod
-    def GetQueryString(node, username, fromDate, toDate, treenodeType):
+    def GetQueryString(node, username, fromDate, toDate, treenodeType, order_by):
         if treenodeType == Collection.COLLECTIONTYPE_AREA_OF_USAGE_ID:
             return '''SELECT v.* from "Tankolasok" v WHERE (v."dt_num">=%f) and (v."dt_num"<=%f) order by v."dt_num";''' % (float(fromDate), float(toDate))
         elif treenodeType == Collection.COLLECTIONTYPE_USER_GROUPS_ID:
             return '''SELECT v.* from "Tankolasok" v, (SELECT a."abs_id", a."sofor_csop", a."gep_csop",a."sofor_card",a."gep_card" FROM "Tankolasok" a, (SELECT p.MYCSOP, p.MYCARD FROM CS_TANK(%s, \'%s\') p) al WHERE (a."sofor_csop"=al.MYCSOP)or(a."gep_csop"=al.MYCSOP)or(a."sofor_card"=al.MYCARD)or(a."gep_card"=al.MYCARD) GROUP by a."abs_id", a."sofor_csop", a."gep_csop",a."sofor_card",a."gep_card") al2 WHERE v."abs_id"=al2."abs_id"and (v."dt_num">=%f) and (v."dt_num"<=%f) order by v."dt_num";''' % (node, username, float(fromDate), float(toDate))
         elif treenodeType == Collection.COLLECTIONTYPE_PLACE_OF_USAGE_ID:
-            return '''SELECT v.* from "Tankolasok" v, (SELECT a."abs_id", a."vezerlo", a."gep_csop",a."kut" FROM "Tankolasok" a, (SELECT p.MYVEZ, p.MYKUT, p.MYCSOP FROM H_TANK(%s, \'%s\', -1) p) al WHERE ((a."vezerlo"=al."MYVEZ")AND(a."kut"=al."MYKUT"))or(a."gep_csop"=al.MYCSOP) GROUP by a."abs_id", a."vezerlo", a."kut", a."gep_csop") al2 WHERE v."abs_id"=al2."abs_id" and(v."dt_num">=%f)and(v."dt_num"<=%f) order by v."dt_num";''' % (node, username, float(fromDate), float(toDate))
+            return '''SELECT v.* from "Tankolasok" v, (SELECT a."abs_id", a."vezerlo", a."gep_csop",a."kut" FROM "Tankolasok" a, (SELECT p.MYVEZ, p.MYKUT, p.MYCSOP FROM H_TANK(%s, \'%s\', -1) p) al WHERE ((a."vezerlo"=al."MYVEZ")AND(a."kut"=al."MYKUT"))or(a."gep_csop"=al.MYCSOP) GROUP by a."abs_id", a."vezerlo", a."kut", a."gep_csop") al2 WHERE v."abs_id"=al2."abs_id" and(v."dt_num">=%f)and(v."dt_num"<=%f) %s;''' % (node, username, float(fromDate), float(toDate), order_by)
 
     def details(self, node, username, fromDate, toDate, treenodeType):
-        queryString = self.GetQueryString(node, username, fromDate, toDate, treenodeType)
+        fields = self.getFieldsFromDBGrid(node, username, self.DBGRID_TAB_ID)
+
+        queryString = self.GetQueryString(node, username, fromDate, toDate, treenodeType, fields["order_by"])
 
         summaryMenu = [["refuelling_summary", "", "", "refueling_summary/%s/%s" % (node, treenodeType), "simple_table_view"]]
 
-        return self.executeRawQuery(Tankolasok.objects, queryString, ["abs_id", "dt_num", "status_c", "s_n_d", "ua_mm", "v_mm", "t_hofok", "e_ar", "status_n", "mil_a"], summaryMenu)
+        return self.executeRawQuery(Tankolasok.objects, queryString, fields["fields"], summaryMenu, {'ua_tipn': Collection.FuelTypeConverter})
 
     def summary(self, node, username, fromDate, toDate, treenodeType):
-        queryString = self.GetQueryString(node, username, fromDate, toDate, treenodeType)
+        fields = self.getFieldsFromDBGrid(node, username, self.DBGRID_TAB_ID)
+
+        queryString = self.GetQueryString(node, username, fromDate, toDate, treenodeType, fields["order_by"])
+
         results = Tankolasok.objects.raw(queryString)
         data = []
         sCNT = 0

@@ -101,15 +101,16 @@ class Csoportok(models.Model):
 
 
 class Dbgrid(models.Model):
-    num = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
+    num = models.DecimalField(primary_key=True, max_digits=10, decimal_places=0)
     user = models.CharField(max_length=70, blank=True)
     node = models.DecimalField(null=True, max_digits=10, decimal_places=0, blank=True)
     ful = models.CharField(max_length=70, blank=True)
+    ful_n = models.IntegerField(null=True, blank=True)
     sorrend = models.CharField(max_length=255, blank=True)
     grid = models.TextField(blank=True)
 
     class Meta:
-        db_table = 'dbgrid'
+        db_table = 'DBGrid'
 
 
 class DjangoContentType(models.Model):
